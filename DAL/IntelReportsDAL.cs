@@ -8,5 +8,39 @@ namespace Malshinon.DAL
 {
     internal class IntelReportsDAL
     {
+        public void InsertIntelReport()
+        {
+
+        }
+
+        public void UpdateReportCount()
+        {
+
+        }
+
+        public void UpdateMentionCount()
+        {
+
+        }
+
+        public void GetReporterStats()
+        {
+
+        }
+
+        public void GetTargetStats()
+        {
+
+        }
+
+        public void CreateAlert()
+        {
+
+        }
+
+        public void GetAlerts()
+        {
+
+        }
     }
 }
