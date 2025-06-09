@@ -32,5 +32,11 @@ namespace Malshinon
             this.numReports = numReports;
             this.numMentions = numMentions;
         }
+        public People(string firstName, string lastName, string secretCode)
+        {
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.secretCode = secretCode;
+        }
     }
 }
