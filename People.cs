@@ -6,7 +6,31 @@ using System.Threading.Tasks;
 
 namespace Malshinon
 {
+    public enum PersonType
+    {
+        Reporter,
+        Target,
+        Both,
+        PotentialAgent
+    }
     internal class People
     {
+        int id { get; set; }
+        string firstName { get; set; }
+        string lastName { get; set; }
+        string secretCode { get; set; }
+        PersonType type { get; set; } = PersonType.Reporter;
+        int numReports { get; set; }
+        int numMentions { get; set; }
+        public People(int id, string firstName, string lastName, string secretCode, PersonType type, int numReports, int numMentions)
+        {
+            this.id = id;
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.secretCode = secretCode;
+            this.type = type;
+            this.numReports = numReports;
+            this.numMentions = numMentions;
+        }
     }
 }
