@@ -8,5 +8,21 @@ namespace Malshinon.DAL
 {
     internal class PeopelDAL
     {
+        public void GetPersonByName()
+        {
+
+        }
+
+        public void GetPersonBySecretCode()
+        {
+
+        }
+
+        public void InsertNewPerson()
+        {
+
+        }
+
+
     }
 }
