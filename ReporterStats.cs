@@ -12,6 +12,12 @@ namespace Malshinon
         public string LastName { get; set; }
         public int TotalReports { get; set; }
         public double AverageReportLength { get; set; }
-
+        public ReporterStats(string firstName, string lastName, int totalReports, double averageReportLength)
+        {
+            FirstName = firstName;
+            LastName = lastName;
+            TotalReports = totalReports;
+            AverageReportLength = averageReportLength;
+        }
     }
 }
