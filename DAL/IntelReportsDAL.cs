@@ -76,9 +76,57 @@ namespace Malshinon.DAL
             }
         }
 
-        public void GetReporterStats()
+        public List<ReporterStats> GetReporterStats()
         {
+            var statsList = new List<ReporterStats>();
 
+            string query = @"
+                           SELECT 
+                               p.first_name, 
+                               p.last_name, 
+                               p.num_reports,
+                               COALESCE(AVG(CHAR_LENGTH(ir.text)), 0) AS avg_report_length
+                           FROM 
+                               People p
+                           LEFT JOIN 
+                               IntelReports ir ON p.id = ir.reporter_id
+                           WHERE 
+                               p.type IN ('reporter', 'both', 'potential_agent')
+                           GROUP BY 
+                               p.id, p.first_name, p.last_name, p.num_reports
+                           ORDER BY
+                               p.num_reports DESC;
+                            ";
+
+            using (var connection = new MySqlConnection(_connStr))
+            {
+                var command = new MySqlCommand(query, connection);
+                try
+                {
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var stats = new ReporterStats(
+                                reader.GetString("first_name"),
+                                reader.GetString("last_name"),
+                                reader.GetInt32("num_reports"),
+                                reader.GetDouble("avg_report_length")
+                            );
+
+                            statsList.Add(stats);
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine($"Database error in GetReporterStats: {e.Message}");
+                    // In case of an error, return an empty list so as not to crash the entire program
+                    return new List<ReporterStats>();
+                }
+            }
+            return statsList;
         }
 
         public void GetTargetStats()
