@@ -106,7 +106,56 @@ namespace Malshinon
                 }
             }
         }
+        public bool PersonExistsByName(string first_name, string last_name)
+        {
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    var query = "SELECT 1 FROM People WHERE first_name = @first_name AND last_name = @last_name LIMIT 1";
+                    using (var cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@first_name", first_name);
+                        cmd.Parameters.AddWithValue("@last_name", last_name);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            return reader.Read();
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error checking person existence by name: " + e.Message);
+                    return false;
+                }
+            }
+        }
 
+        public bool PersonExistsBySecretCode(string secret_code)
+        {
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    var query = "SELECT 1 FROM People WHERE secret_code = @secret_code LIMIT 1";
+                    using (var cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@secret_code", secret_code);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            return reader.Read();
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error checking person existence by secret_code: " + e.Message);
+                    return false;
+                }
+            }
+        }
 
     }
 }
