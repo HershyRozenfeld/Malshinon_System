@@ -9,9 +9,9 @@ namespace Malshinon
     internal class IntelReports
     {
         int id { get; set; }
-        string reporterId { get; set; }
-        string targetId { get; set; }
-        string text { get; set; }
+        public string reporterId { get; set; }
+        public string targetId { get; set; }
+        public string text { get; set; }
         DateTime time { get; set; }
         public IntelReports(int id, string reporterId, string targetId, string text, DateTime time)
         {
