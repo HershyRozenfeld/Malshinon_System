@@ -55,9 +55,25 @@ namespace Malshinon.DAL
             }
         }
 
-        public void UpdateMentionCount()
+        public void UpdateMentionCount(string peopelId)
         {
-
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    var query = @"UPDATE People SET num_mentions = num_mentions + 1 WHERE id = @id";
+                    using (var cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@id", peopelId);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error updating mentions count: " + e.Message);
+                }
+            }
         }
 
         public void GetReporterStats()
