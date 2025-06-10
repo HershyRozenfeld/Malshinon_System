@@ -21,5 +21,11 @@ namespace Malshinon
             this.text = text;
             this.time = time;
         }
+        public IntelReports(string reporterId, string targetId, string text)
+        {
+            this.reporterId = reporterId;
+            this.targetId = targetId;
+            this.text = text;
+        }
     }
 }
