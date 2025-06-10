@@ -34,9 +34,25 @@ namespace Malshinon.DAL
             }
         }
 
-        public void UpdateReportCount()
+        public void UpdateReportCount(string peopelId)
         {
-
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    var query = @"UPDATE People SET num_reports = num_reports + 1 WHERE id = @id";
+                    using (var cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@id", peopelId);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error updating report count: " + e.Message);
+                }
+            }
         }
 
         public void UpdateMentionCount()
