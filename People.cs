@@ -31,12 +31,20 @@ namespace Malshinon
             this.type = type;
             this.numReports = numReports;
             this.numMentions = numMentions;
+            SecretCodeMaker();
         }
         public People(string firstName, string lastName, string secretCode)
         {
             this.firstName = firstName;
             this.lastName = lastName;
             this.secretCode = secretCode;
+            SecretCodeMaker();
+        }
+        private void SecretCodeMaker()
+        {
+            string combined = firstName + lastName;
+            int hash = combined.GetHashCode();
+            this.secretCode = Math.Abs(hash).ToString();
         }
     }
 }
