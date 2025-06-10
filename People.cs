@@ -16,10 +16,10 @@ namespace Malshinon
     internal class People
     {
         int id { get; set; }
-        string firstName { get; set; }
-        string lastName { get; set; }
-        string secretCode { get; set; }
-        PersonType type { get; set; } = PersonType.Reporter;
+        public string firstName { get; set; }
+        public string lastName { get; set; }
+        public string secretCode { get; set; }
+        public PersonType type { get; set; } = PersonType.Reporter;
         int numReports { get; set; }
         int numMentions { get; set; }
         public People(int id, string firstName, string lastName, string secretCode, PersonType type, int numReports, int numMentions)
