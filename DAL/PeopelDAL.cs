@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -37,7 +38,7 @@ namespace Malshinon
                     {
                         cmd.Parameters.AddWithValue("@first_name", first_name);
                         cmd.Parameters.AddWithValue("@last_name", last_name);
-                        using (var reader = cmd.ExecuteReader())
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
                         {
                             if (reader.Read())
                             {
@@ -81,9 +82,29 @@ namespace Malshinon
             }
             return people;
         }
-        public void InsertNewPerson()
+        public void InsertNewPerson(People people)
         {
-
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    var query = @"INSERT INTO People (first_name, last_name, secret_code, type)
+                                        VALUES (@first_name, @last_name, @secret_code, @type)";
+                    using (var cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@first_name", people.firstName);
+                        cmd.Parameters.AddWithValue("@last_name", people.lastName);
+                        cmd.Parameters.AddWithValue("@secret_code", people.secretCode);
+                        cmd.Parameters.AddWithValue("@type", people.type);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error INSERT people to the DB: " + e.Message);
+                }
+            }
         }
 
 
