@@ -191,34 +191,6 @@ namespace Malshinon.DAL
             }
             return timestamps;
         }
-        public void CreateAlert(int targetId, string reason, DateTime startTime, DateTime endTime)
-        {
-            string query = @"
-            INSERT INTO Alerts (target_id, reason, start_time, end_time) 
-            VALUES (@targetId, @reason, @startTime, @endTime);";
-
-            using (var conn = new MySqlConnection(_connStr))
-            {
-                var cmd = new MySqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@targetId", targetId);
-                cmd.Parameters.AddWithValue("@reason", reason);
-                cmd.Parameters.AddWithValue("@startTime", startTime);
-                cmd.Parameters.AddWithValue("@endTime", endTime);
-                try
-                {
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-                catch (MySqlException e)
-                {
-                    Console.WriteLine($"Database error in CreateAlert: {e.Message}");
-                }
-            }
-        }
-
-        public void GetAlerts()
-        {
-
-        }
+        
     }
 }
