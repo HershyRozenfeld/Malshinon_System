@@ -101,6 +101,7 @@
     <Compile Include="DAL\IntelReportsDAL.cs" />
     <Compile Include="DAL\PeopelDAL.cs" />
     <Compile Include="IntelReports.cs" />
+    <Compile Include="Menu.cs" />
     <Compile Include="People.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
