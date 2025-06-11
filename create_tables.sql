@@ -4,7 +4,7 @@ SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
 -- יצירת טבלת האנשים אם לא קיימת
-CREATE TABLE IF NOT EXISTS People (
+CREATE TABLE IF NOT EXISTS Person (
     id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS IntelReports (
     target_id INT NOT NULL,
     text TEXT NOT NULL,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (reporter_id) REFERENCES People(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_id) REFERENCES People(id) ON DELETE CASCADE
+    FOREIGN KEY (reporter_id) REFERENCES Person(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_id) REFERENCES Person(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- יצירת טבלת התראות אם לא קיימת
@@ -33,5 +33,5 @@ CREATE TABLE IF NOT EXISTS Alerts (
     start_time DATETIME NOT NULL,
     end_time DATETIME NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (target_id) REFERENCES People(id) ON DELETE CASCADE
+    FOREIGN KEY (target_id) REFERENCES Person(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

@@ -97,12 +97,13 @@
   <ItemGroup>
     <Compile Include="Alerts.cs" />
     <Compile Include="BurstResult.cs" />
+    <Compile Include="CsvImporter.cs" />
     <Compile Include="DAL\AlertsDAL.cs" />
     <Compile Include="DAL\IntelReportsDAL.cs" />
-    <Compile Include="DAL\PeopelDAL.cs" />
+    <Compile Include="DAL\PersonDAL.cs" />
     <Compile Include="IntelReports.cs" />
     <Compile Include="Menu.cs" />
-    <Compile Include="People.cs" />
+    <Compile Include="Person.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReporterStats.cs" />

@@ -13,16 +13,16 @@ namespace Malshinon
         Both,
         PotentialAgent
     }
-    internal class People
+    internal class Person
     {
-        int id { get; set; }
+        public int id { get; set; }
         public string firstName { get; set; }
         public string lastName { get; set; }
         public string secretCode { get; set; }
         public PersonType type { get; set; } = PersonType.Reporter;
         int numReports { get; set; }
         int numMentions { get; set; }
-        public People(int id, string firstName, string lastName, string secretCode, PersonType type, int numReports, int numMentions)
+        public Person(int id, string firstName, string lastName, string secretCode, PersonType type, int numReports, int numMentions)
         {
             this.id = id;
             this.firstName = firstName;
@@ -33,7 +33,7 @@ namespace Malshinon
             this.numMentions = numMentions;
             SecretCodeMaker();
         }
-        public People(string firstName, string lastName, string secretCode)
+        public Person(string firstName, string lastName, string secretCode)
         {
             this.firstName = firstName;
             this.lastName = lastName;
