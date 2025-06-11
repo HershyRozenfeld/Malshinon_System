@@ -11,5 +11,12 @@ namespace Malshinon
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public int MentionCount { get; set; }
+
+        public TargetStats(string firstName, string lastName, int mentionCount)
+        {
+            FirstName = firstName;
+            LastName = lastName;
+            MentionCount = mentionCount;
+        }
     }
 }
