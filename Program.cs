@@ -1,4 +1,4 @@
-﻿using Malshinon.DAL;
+﻿using Malshinon;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,10 +37,6 @@ namespace Malshinon
                             StartTime = windowStart,
                             EndTime = windowEnd
                         };
-                    }
-                    else
-                    {
-                        break;
                     }
                 }
             }
