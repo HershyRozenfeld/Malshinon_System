@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Mysqlx.Prepare;
 
-namespace Malshinon.DAL
+namespace Malshinon
 {
     internal class IntelReportsDAL
     {
@@ -42,7 +42,7 @@ namespace Malshinon.DAL
                 try
                 {
                     conn.Open();
-                    var query = @"UPDATE People SET num_reports = num_reports + 1 WHERE id = @id";
+                    var query = @"UPDATE Person SET num_reports = num_reports + 1 WHERE id = @id";
                     using (var cmd = new MySqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@id", peopelId);
@@ -63,7 +63,7 @@ namespace Malshinon.DAL
                 try
                 {
                     conn.Open();
-                    var query = @"UPDATE People SET num_mentions = num_mentions + 1 WHERE id = @id";
+                    var query = @"UPDATE Person SET num_mentions = num_mentions + 1 WHERE id = @id";
                     using (var cmd = new MySqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@id", peopelId);
@@ -88,7 +88,7 @@ namespace Malshinon.DAL
                                p.num_reports,
                                COALESCE(AVG(CHAR_LENGTH(ir.text)), 0) AS avg_report_length
                            FROM 
-                               People p
+                               Person p
                            LEFT JOIN 
                                IntelReports ir ON p.id = ir.reporter_id
                            WHERE 
@@ -134,7 +134,7 @@ namespace Malshinon.DAL
             List<TargetStats> statsList = new List<TargetStats>();
             string query = @"
                             SELECT first_name, last_name, num_mentions
-                            FROM People
+                            FROM Person
                             WHERE type IN ('target', 'both') AND num_mention > 0
                             ORDER BY num_mentions DESC;";
             using (var conn = new MySqlConnection(_connStr))
