@@ -95,6 +95,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Alerts.cs" />
+    <Compile Include="BurstResult.cs" />
+    <Compile Include="DAL\AlertsDAL.cs" />
     <Compile Include="DAL\IntelReportsDAL.cs" />
     <Compile Include="DAL\PeopelDAL.cs" />
     <Compile Include="IntelReports.cs" />

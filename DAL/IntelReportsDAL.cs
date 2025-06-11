@@ -96,16 +96,15 @@ namespace Malshinon.DAL
                            GROUP BY 
                                p.id, p.first_name, p.last_name, p.num_reports
                            ORDER BY
-                               p.num_reports DESC;
-                            ";
+                               p.num_reports DESC;";
 
-            using (var connection = new MySqlConnection(_connStr))
+            using (var conn = new MySqlConnection(_connStr))
             {
-                var command = new MySqlCommand(query, connection);
+                var cmd = new MySqlCommand(query, conn);
                 try
                 {
-                    connection.Open();
-                    using (var reader = command.ExecuteReader())
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
@@ -138,13 +137,13 @@ namespace Malshinon.DAL
                             FROM People
                             WHERE type IN ('target', 'both') AND num_mention > 0
                             ORDER BY num_mentions DESC;";
-            using (var connection = new MySqlConnection(_connStr))
+            using (var conn = new MySqlConnection(_connStr))
             {
-                var command = new MySqlCommand(query, connection);
+                var cmd = new MySqlCommand(query, conn);
                 try
                 {
-                    connection.Open();
-                    using (var reader = command.ExecuteReader())
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
@@ -166,15 +165,32 @@ namespace Malshinon.DAL
             return statsList;
         }
 
-
-        public void CreateAlert()
+        public List<DateTime> GetTimestampsForTarget(int targetId)
         {
-
+            var timestamps = new List<DateTime>();
+            string query = "SELECT timestemp FROM IntelReports WHERE rarget_id = @targetId ORDER BY timestamp ASC;";
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                var cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@targetId", targetId);
+                try
+                {
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            timestamps.Add(reader.GetDateTime("timestamp"));
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("Database error in GetTimestampsForTarget: " + e.Message);
+                }
+            }
+            return timestamps;
         }
-
-        public void GetAlerts()
-        {
-
-        }
+        
     }
 }

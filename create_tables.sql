@@ -24,3 +24,14 @@ CREATE TABLE IF NOT EXISTS IntelReports (
     FOREIGN KEY (reporter_id) REFERENCES People(id) ON DELETE CASCADE,
     FOREIGN KEY (target_id) REFERENCES People(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- יצירת טבלת התראות אם לא קיימת
+CREATE TABLE IF NOT EXISTS Alerts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    target_id INT NOT NULL,
+    reason TEXT NOT NULL,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (target_id) REFERENCES People(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
