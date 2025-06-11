@@ -1,78 +1,69 @@
 ﻿using System;
-using MySql.Data.MySqlClient;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Mysqlx.Prepare;
+using MySql.Data.MySqlClient;
 
 namespace Malshinon
 {
     internal class IntelReportsDAL
     {
-        private readonly string _connStr = "server=localhost;user=root;password=;database=Malshinon";
-        public void InsertIntelReport(IntelReports intelReports)
+        // מחרוזת חיבור – לא לשמור בקוד-מקור בפרויקט אמיתי
+        private readonly string _connStr =
+            "server=localhost;user=root;password=;database=Malshinon";
+
+        /*--------------------------------------------------------
+         * 1. הוספת דיווח חדש
+         *-------------------------------------------------------*/
+        public void InsertIntelReport(IntelReports intelReport)
         {
             using (var conn = new MySqlConnection(_connStr))
             {
-                try
+                conn.Open();
+                const string query = @"
+                    INSERT INTO IntelReports (reporter_id, target_id, text)
+                    VALUES (@reporterId, @targetId, @text);";
+
+                using (var cmd = new MySqlCommand(query, conn))
                 {
-                    conn.Open();
-                    var query = @"INSERT INTO IntelReports (reporter_id, target_id, text)
-                                  VALUES (@reporter_id, @target_id, @text)";
-                    using (var cmd = new MySql.Data.MySqlClient.MySqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@reporter_id", intelReports.reporterId);
-                        cmd.Parameters.AddWithValue("@target_id", intelReports.targetId);
-                        cmd.Parameters.AddWithValue("@text", intelReports.text);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Error INSERT IntelReport to the DB: " + e.Message);
+                    cmd.Parameters.AddWithValue("@reporterId", intelReport.reporterId);
+                    cmd.Parameters.AddWithValue("@targetId", intelReport.targetId);
+                    cmd.Parameters.AddWithValue("@text", intelReport.text);
+                    cmd.ExecuteNonQuery();
                 }
             }
         }
 
-        public void UpdateReportCount(string peopelId)
+        /*--------------------------------------------------------
+         * 2. עדכון מונה דיווחים של מדווח
+         *-------------------------------------------------------*/
+        public void UpdateReportCount(int personId)
         {
             using (var conn = new MySqlConnection(_connStr))
             {
-                try
+                conn.Open();
+                const string query =
+                    "UPDATE Person SET num_reports = num_reports + 1 WHERE id = @id;";
+                using (var cmd = new MySqlCommand(query, conn))
                 {
-                    conn.Open();
-                    var query = @"UPDATE Person SET num_reports = num_reports + 1 WHERE id = @id";
-                    using (var cmd = new MySqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@id", peopelId);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Error updating report count: " + e.Message);
+                    cmd.Parameters.AddWithValue("@id", personId);
+                    cmd.ExecuteNonQuery();
                 }
             }
         }
 
-        public void UpdateMentionCount(string peopelId)
+        /*--------------------------------------------------------
+         * 3. עדכון מונה אזכורים של מטרה
+         *-------------------------------------------------------*/
+        public void UpdateMentionCount(int personId)
         {
             using (var conn = new MySqlConnection(_connStr))
             {
-                try
+                conn.Open();
+                const string query =
+                    "UPDATE Person SET num_mentions = num_mentions + 1 WHERE id = @id;";
+                using (var cmd = new MySqlCommand(query, conn))
                 {
-                    conn.Open();
-                    var query = @"UPDATE Person SET num_mentions = num_mentions + 1 WHERE id = @id";
-                    using (var cmd = new MySqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@id", peopelId);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Error updating mentions count: " + e.Message);
+                    cmd.Parameters.AddWithValue("@id", personId);
+                    cmd.ExecuteNonQuery();
                 }
             }
         }
@@ -81,116 +72,162 @@ namespace Malshinon
         {
             var statsList = new List<ReporterStats>();
 
-            string query = @"
-                           SELECT 
-                               p.first_name, 
-                               p.last_name, 
-                               p.num_reports,
-                               COALESCE(AVG(CHAR_LENGTH(ir.text)), 0) AS avg_report_length
-                           FROM 
-                               Person p
-                           LEFT JOIN 
-                               IntelReports ir ON p.id = ir.reporter_id
-                           WHERE 
-                               p.type IN ('reporter', 'both', 'potential_agent')
-                           GROUP BY 
-                               p.id, p.first_name, p.last_name, p.num_reports
-                           ORDER BY
-                               p.num_reports DESC;";
+            const string query = @"
+                SELECT  p.first_name,
+                        p.last_name,
+                        p.num_reports,
+                        COALESCE(AVG(CHAR_LENGTH(ir.text)),0) AS avg_report_length
+                FROM    Person p
+                LEFT JOIN IntelReports ir ON p.id = ir.reporter_id
+                WHERE   p.type IN ('reporter','both','potential_agent')
+                GROUP BY p.id
+                ORDER BY p.num_reports DESC;";
 
             using (var conn = new MySqlConnection(_connStr))
             {
-                var cmd = new MySqlCommand(query, conn);
-                try
+                conn.Open();
+                using (var cmd = new MySqlCommand(query, conn))
+                using (var reader = cmd.ExecuteReader())
                 {
-                    conn.Open();
+                    while (reader.Read())
+                    {
+                        statsList.Add(new ReporterStats(
+                            reader.GetString("first_name"),
+                            reader.GetString("last_name"),
+                            reader.GetInt32("num_reports"),
+                            reader.GetDouble("avg_report_length")));
+                    }
+                }
+            }
+            return statsList;
+        }
+
+        /*--------------------------------------------------------
+         * 5. סטטיסטיקות מטרות
+         *    >>>  num_mentions  <<<  (תוקן)
+         *-------------------------------------------------------*/
+        public List<TargetStats> GetTargetStats()
+        {
+            var list = new List<TargetStats>();
+
+            const string query = @"
+                SELECT  first_name,
+                        last_name,
+                        num_mentions
+                FROM    Person
+                WHERE   type IN ('target','both') AND num_mentions > 0
+                ORDER BY num_mentions DESC;";
+
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                conn.Open();
+                using (var cmd = new MySqlCommand(query, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        list.Add(new TargetStats(
+                            reader.GetString("first_name"),
+                            reader.GetString("last_name"),
+                            reader.GetInt32("num_mentions")));
+                    }
+                }
+            }
+            return list;
+        }
+
+        /*--------------------------------------------------------
+         * 6. החזרת כל ה-timestamps של מטרה נתונה
+         *    >>>  target_id, timestamp  <<<  (תוקן)
+         *-------------------------------------------------------*/
+        public List<DateTime> GetTimestampsForTarget(int targetId)
+        {
+            var times = new List<DateTime>();
+
+            const string query = @"
+                SELECT  timestamp
+                FROM    IntelReports
+                WHERE   target_id = @targetId
+                ORDER BY timestamp ASC;";
+
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                conn.Open();
+                using (var cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@targetId", targetId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var stats = new ReporterStats(
+                            times.Add(reader.GetDateTime("timestamp"));
+                        }
+                    }
+                }
+            }
+            return times;
+        }
+
+        /*--------------------------------------------------------
+         * 7. סטטיסטיקה למדווח יחיד (לצורך קידום)
+         *-------------------------------------------------------*/
+        public ReporterStats GetStatsForSingleReporter(int reporterId)
+        {
+            ReporterStats stats = null;
+
+            const string query = @"
+                SELECT  p.first_name,
+                        p.last_name,
+                        p.num_reports,
+                        COALESCE(AVG(CHAR_LENGTH(ir.text)),0) AS avg_report_length
+                FROM    Person p
+                LEFT JOIN IntelReports ir ON p.id = ir.reporter_id
+                WHERE   p.id = @rid
+                GROUP BY p.id;";
+
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                conn.Open();
+                using (var cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@rid", reporterId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            stats = new ReporterStats(
                                 reader.GetString("first_name"),
                                 reader.GetString("last_name"),
                                 reader.GetInt32("num_reports"),
-                                reader.GetDouble("avg_report_length")
-                            );
-
-                            statsList.Add(stats);
+                                reader.GetDouble("avg_report_length"));
                         }
                     }
                 }
-                catch (MySqlException e)
-                {
-                    Console.WriteLine($"Database error in GetReporterStats: {e.Message}");
-                    // In case of an error, return an empty list so as not to crash the entire program
-                    return new List<ReporterStats>();
-                }
             }
-            return statsList;
+            return stats;
         }
-
-        public List<TargetStats> GetTargetStats()
+        /*--------------------------------------------------------
+ *  new – הכנסת דיווח עם חותמת זמן מותאמת
+ *-------------------------------------------------------*/
+        public void InsertIntelReportWithTimestamp(IntelReports intelReport, DateTime ts)
         {
-            List<TargetStats> statsList = new List<TargetStats>();
-            string query = @"
-                            SELECT first_name, last_name, num_mentions
-                            FROM Person
-                            WHERE type IN ('target', 'both') AND num_mention > 0
-                            ORDER BY num_mentions DESC;";
             using (var conn = new MySqlConnection(_connStr))
             {
-                var cmd = new MySqlCommand(query, conn);
-                try
+                conn.Open();
+                const string q = @"
+            INSERT INTO IntelReports (reporter_id, target_id, text, timestamp)
+            VALUES (@reporterId, @targetId, @text, @ts);";
+
+                using (var cmd = new MySqlCommand(q, conn))
                 {
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var stats = new TargetStats(
-                                reader.GetString("first_name"),
-                                reader.GetString("last_name"),
-                                reader.GetInt32("num_mentions")
-                            );
-                            statsList.Add(stats);
-                        }
-                    }
-                }
-                catch (MySqlException e)
-                {
-                    Console.WriteLine($"Database error in GetTargetStats: {e.Message}");
-                    return new List<TargetStats>();
+                    cmd.Parameters.AddWithValue("@reporterId", intelReport.reporterId);
+                    cmd.Parameters.AddWithValue("@targetId", intelReport.targetId);
+                    cmd.Parameters.AddWithValue("@text", intelReport.text);
+                    cmd.Parameters.AddWithValue("@ts", ts);
+                    cmd.ExecuteNonQuery();
                 }
             }
-            return statsList;
         }
 
-        public List<DateTime> GetTimestampsForTarget(int targetId)
-        {
-            var timestamps = new List<DateTime>();
-            string query = "SELECT timestemp FROM IntelReports WHERE rarget_id = @targetId ORDER BY timestamp ASC;";
-            using (var conn = new MySqlConnection(_connStr))
-            {
-                var cmd = new MySqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@targetId", targetId);
-                try
-                {
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            timestamps.Add(reader.GetDateTime("timestamp"));
-                        }
-                    }
-                }
-                catch (MySqlException e)
-                {
-                    Console.WriteLine("Database error in GetTimestampsForTarget: " + e.Message);
-                }
-            }
-            return timestamps;
-        }
-        
     }
 }

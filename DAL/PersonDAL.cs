@@ -156,6 +156,27 @@ namespace Malshinon
                 }
             }
         }
+        public void UpdatePersonType(int personId, PersonType newType)
+        {
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    var query = "UPDATE Person SET type = @type WHERE id = @id";
+                    using (var cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@id", personId);
+                        cmd.Parameters.AddWithValue("@type", newType.ToString()); // Convert enum to string
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error updating person type: " + e.Message);
+                }
+            }
+        }
 
     }
 }

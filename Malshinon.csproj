@@ -97,6 +97,7 @@
   <ItemGroup>
     <Compile Include="Alerts.cs" />
     <Compile Include="BurstResult.cs" />
+    <Compile Include="CsvImporter.cs" />
     <Compile Include="DAL\AlertsDAL.cs" />
     <Compile Include="DAL\IntelReportsDAL.cs" />
     <Compile Include="DAL\PersonDAL.cs" />
