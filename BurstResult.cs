@@ -19,5 +19,8 @@ namespace Malshinon
             StartTime = startTime;
             EndTime = endTime;
         }
+        public BurstResult()
+        {
+        }
     }
 }
