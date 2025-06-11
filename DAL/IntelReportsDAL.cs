@@ -96,8 +96,7 @@ namespace Malshinon.DAL
                            GROUP BY 
                                p.id, p.first_name, p.last_name, p.num_reports
                            ORDER BY
-                               p.num_reports DESC;
-                            ";
+                               p.num_reports DESC;";
 
             using (var connection = new MySqlConnection(_connStr))
             {
@@ -166,7 +165,32 @@ namespace Malshinon.DAL
             return statsList;
         }
 
-
+        public List<DateTime> GetTimestampsForTarget(int targetId)
+        {
+            var timestamps = new List<DateTime>();
+            string query = "SELECT timestemp FROM IntelReports WHERE rarget_id = @targetId ORDER BY timestamp ASC;";
+            using (var connection = new MySqlConnection(_connStr))
+            {
+                var command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@targetId", targetId);
+                try
+                {
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            timestamps.Add(reader.GetDateTime("timestamp"));
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("Database error in GetTimestampsForTarget: " + e.Message);
+                }
+            }
+            return timestamps;
+        }
         public void CreateAlert()
         {
 
