@@ -98,13 +98,13 @@ namespace Malshinon.DAL
                            ORDER BY
                                p.num_reports DESC;";
 
-            using (var connection = new MySqlConnection(_connStr))
+            using (var conn = new MySqlConnection(_connStr))
             {
-                var command = new MySqlCommand(query, connection);
+                var cmd = new MySqlCommand(query, conn);
                 try
                 {
-                    connection.Open();
-                    using (var reader = command.ExecuteReader())
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
@@ -137,13 +137,13 @@ namespace Malshinon.DAL
                             FROM People
                             WHERE type IN ('target', 'both') AND num_mention > 0
                             ORDER BY num_mentions DESC;";
-            using (var connection = new MySqlConnection(_connStr))
+            using (var conn = new MySqlConnection(_connStr))
             {
-                var command = new MySqlCommand(query, connection);
+                var cmd = new MySqlCommand(query, conn);
                 try
                 {
-                    connection.Open();
-                    using (var reader = command.ExecuteReader())
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
@@ -169,14 +169,14 @@ namespace Malshinon.DAL
         {
             var timestamps = new List<DateTime>();
             string query = "SELECT timestemp FROM IntelReports WHERE rarget_id = @targetId ORDER BY timestamp ASC;";
-            using (var connection = new MySqlConnection(_connStr))
+            using (var conn = new MySqlConnection(_connStr))
             {
-                var command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@targetId", targetId);
+                var cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@targetId", targetId);
                 try
                 {
-                    connection.Open();
-                    using (var reader = command.ExecuteReader())
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
@@ -191,9 +191,29 @@ namespace Malshinon.DAL
             }
             return timestamps;
         }
-        public void CreateAlert()
+        public void CreateAlert(int targetId, string reason, DateTime startTime, DateTime endTime)
         {
+            string query = @"
+            INSERT INTO Alerts (target_id, reason, start_time, end_time) 
+            VALUES (@targetId, @reason, @startTime, @endTime);";
 
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                var cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@targetId", targetId);
+                cmd.Parameters.AddWithValue("@reason", reason);
+                cmd.Parameters.AddWithValue("@startTime", startTime);
+                cmd.Parameters.AddWithValue("@endTime", endTime);
+                try
+                {
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine($"Database error in CreateAlert: {e.Message}");
+                }
+            }
         }
 
         public void GetAlerts()
