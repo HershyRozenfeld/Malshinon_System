@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Mysqlx.Prepare;
 
 namespace Malshinon.DAL
 {
@@ -129,10 +130,42 @@ namespace Malshinon.DAL
             return statsList;
         }
 
-        public void GetTargetStats()
+        public List<TargetStats> GetTargetStats()
         {
-
+            List<TargetStats> statsList = new List<TargetStats>();
+            string query = @"
+                            SELECT first_name, last_name, num_mentions
+                            FROM People
+                            WHERE type IN ('target', 'both') AND num_mention > 0
+                            ORDER BY num_mentions DESC;";
+            using (var connection = new MySqlConnection(_connStr))
+            {
+                var command = new MySqlCommand(query, connection);
+                try
+                {
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var stats = new TargetStats(
+                                reader.GetString("first_name"),
+                                reader.GetString("last_name"),
+                                reader.GetInt32("num_mentions")
+                            );
+                            statsList.Add(stats);
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine($"Database error in GetTargetStats: {e.Message}");
+                    return new List<TargetStats>();
+                }
+            }
+            return statsList;
         }
+
 
         public void CreateAlert()
         {
