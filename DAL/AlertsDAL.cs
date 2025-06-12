@@ -7,15 +7,24 @@ using System.Threading.Tasks;
 
 namespace Malshinon
 {
+    /// <summary>
+    /// Data access layer for managing alerts in the database.
+    /// </summary>
     internal class AlertsDAL
     {
+        /// The connection string used to connect to the MySQL database.
         private readonly string _connStr = "server=localhost;user=root;password=;database=Malshinon";
 
+        /// Creates a new alert in the database.
+        /// <param name="targetId">The ID of the target for the alert.</param>
+        /// <param name="reason">The reason for the alert.</param>
+        /// <param name="startTime">The start time of the alert.</param>
+        /// <param name="endTime">The end time of the alert.</param>
         public void CreateAlert(int targetId, string reason, DateTime startTime, DateTime endTime)
         {
             string query = @"
-            INSERT INTO Alerts (target_id, reason, start_time, end_time) 
-            VALUES (@targetId, @reason, @startTime, @endTime);";
+                INSERT INTO Alerts (target_id, reason, start_time, end_time) 
+                VALUES (@targetId, @reason, @startTime, @endTime);";
 
             using (var conn = new MySqlConnection(_connStr))
             {
@@ -36,6 +45,8 @@ namespace Malshinon
             }
         }
 
+        /// Retrieves the most recently created alert from the database.
+        /// <returns>An <see cref="Alerts"/> object representing the last alert, or null if no alert is found.</returns>
         public Alerts GetLastAlerts()
         {
             string query = "SELECT id, target_id, reason, start_time, end_time, created_at FROM Alerts ORDER BY created_at DESC LIMIT 1;";
@@ -66,5 +77,5 @@ namespace Malshinon
             }
             return null;
         }
-    }
+    }       
 }
