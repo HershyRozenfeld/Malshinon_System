@@ -41,13 +41,11 @@ namespace Malshinon
             this.type = type;
             this.numReports = numReports;
             this.numMentions = numMentions;
-            SecretCodeMaker();
         }
-        public Person(string firstName, string lastName, string secretCode)
+        public Person(string firstName, string lastName)
         {
             this.firstName = firstName;
             this.lastName = lastName;
-            this.secretCode = secretCode;
             SecretCodeMaker();
         }
         /// Generates a secret code based on the person's first and last name.
