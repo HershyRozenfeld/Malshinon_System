@@ -8,9 +8,18 @@ using System.Threading.Tasks;
 
 namespace Malshinon
 {
+    /// <summary>
+    /// Data access layer for Person entities.
+    /// Provides methods for inserting, updating, and retrieving Person records.
+    /// </summary>
     internal class PersonDAL
     {
         private readonly string _connStr = "server=localhost;user=root;password=;database=Malshinon";
+
+        
+        /// Maps a MySqlDataReader row to a Person object.
+        /// <param name="reader">The data reader containing person data.</param>
+        /// <returns>A Person object populated from the reader.</returns>
         private Person MapReaderToPeople(MySqlDataReader reader)
         {
             var typeString = reader.GetString(reader.GetOrdinal("type"));
@@ -25,6 +34,12 @@ namespace Malshinon
                 reader.GetInt32("num_mentions")
             );
         }
+
+        
+        /// Retrieves a person by their first and last name.
+        /// <param name="first_name">The first name of the person.</param>
+        /// <param name="last_name">The last name of the person.</param>
+        /// <returns>The Person object if found; otherwise, null.</returns>
         public Person GetPersonByName(string first_name, string last_name)
         {
             Person person = null;
@@ -54,6 +69,11 @@ namespace Malshinon
             }
             return person;
         }
+
+        
+        /// Retrieves a person by their secret code.
+        /// <param name="secret_code">The secret code of the person.</param>
+        /// <returns>The Person object if found; otherwise, null.</returns>
         public Person GetPersonBySecretCode(string secret_code)
         {
             Person person = null;
@@ -82,6 +102,10 @@ namespace Malshinon
             }
             return person;
         }
+
+        
+        /// Inserts a new person into the database.
+        /// <param name="person">The Person object to insert.</param>
         public void InsertNewPerson(Person person)
         {
             using (var conn = new MySqlConnection(_connStr))
@@ -90,7 +114,7 @@ namespace Malshinon
                 {
                     conn.Open();
                     var query = @"INSERT INTO Person (first_name, last_name, secret_code, type)
-                                        VALUES (@first_name, @last_name, @secret_code, @type)";
+                                            VALUES (@first_name, @last_name, @secret_code, @type)";
                     using (var cmd = new MySqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@first_name", person.firstName);
@@ -106,6 +130,12 @@ namespace Malshinon
                 }
             }
         }
+
+        
+        /// Checks if a person exists in the database by their first and last name.
+        /// <param name="first_name">The first name of the person.</param>
+        /// <param name="last_name">The last name of the person.</param>
+        /// <returns>True if the person exists; otherwise, false.</returns>
         public bool PersonExistsByName(string first_name, string last_name)
         {
             using (var conn = new MySqlConnection(_connStr))
@@ -132,6 +162,10 @@ namespace Malshinon
             }
         }
 
+        
+        /// Checks if a person exists in the database by their secret code.
+        /// <param name="secret_code">The secret code of the person.</param>
+        /// <returns>True if the person exists; otherwise, false.</returns>
         public bool PersonExistsBySecretCode(string secret_code)
         {
             using (var conn = new MySqlConnection(_connStr))
@@ -156,6 +190,11 @@ namespace Malshinon
                 }
             }
         }
+
+        
+        /// Updates the type of a person in the database.
+        /// <param name="personId">The ID of the person to update.</param>
+        /// <param name="newType">The new PersonType to set.</param>
         public void UpdatePersonType(int personId, PersonType newType)
         {
             using (var conn = new MySqlConnection(_connStr))
@@ -177,6 +216,5 @@ namespace Malshinon
                 }
             }
         }
-
     }
 }
