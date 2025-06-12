@@ -99,7 +99,7 @@ namespace Malshinon
                 Console.ResetColor();
 
                 string reason =
-                    $"Promoted to Potential Agent due to {stats.TotalReports} reports with an average length of {stats.AverageReportLength:F0} characters.";
+                    $"קודם לסוכן פוטנציאלי בעקבות {stats.TotalReports} דוחות עם אורך ממוצע {stats.AverageReportLength:F0} תווים.";
                 _alertsDal.CreateAlert(dbReporter.id, reason, DateTime.Now, DateTime.Now);
             }
         }
@@ -168,8 +168,7 @@ namespace Malshinon
                 Console.WriteLine("Person not found. Creating a new record.");
                 string secretCode = Guid.NewGuid().ToString("N").Substring(0, 8);
 
-                person = new Person(0, firstName, lastName, secretCode, defaultType, 0, 0);
-                _personDal.InsertNewPerson(person);
+                person = new Person(firstName, lastName);
 
                 person = _personDal.GetPersonByName(firstName, lastName);
             }
