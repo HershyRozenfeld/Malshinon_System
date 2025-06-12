@@ -31,6 +31,7 @@ namespace Malshinon
                 Console.WriteLine("3. Show potential agents");
                 Console.WriteLine("4. Show dangerous targets");
                 Console.WriteLine("5. Show latest alerts");
+                Console.WriteLine("6. Find burst activity for target");
                 Console.WriteLine("0. Exit");
                 Console.Write("Choice: ");
                 string choice = Console.ReadLine();
@@ -58,6 +59,11 @@ namespace Malshinon
                     case "5":
                         PrintLastAlert(alertsDal);
                         break;
+
+                    case "6":
+                        FindBurstActivity(intelReportsDal);
+                        break;
+
                     case "0":
                         return;
 
@@ -114,6 +120,37 @@ namespace Malshinon
                 return;
             }
             Console.WriteLine($"\n--- Latest Alert ---\nTarget: {a.TargetId}\nReason: {a.Reason}\nTime: {a.CreatedAt}");
+        }
+
+        /// Finds and displays burst activity for a target by full name.
+        private static void FindBurstActivity(IntelReportsDAL intelReportsDal)
+        {
+            Console.Write("Enter target's full name: ");
+            string fullName = Console.ReadLine();
+            string[] nameParts = fullName.Split(new[] { ' ' }, 2);
+            if (nameParts.Length < 2)
+            {
+                Console.WriteLine("Please enter both first and last name.");
+                return;
+            }
+
+            var personDal = new PersonDAL();
+            var person = personDal.GetPersonByName(nameParts[0], nameParts[1]);
+            if (person == null)
+            {
+                Console.WriteLine("Target not found.");
+                return;
+            }
+
+            var burst = ReportHandler.FindBurstActivityForTarget(person.id);
+            if (burst.IsBurstFound)
+            {
+                Console.WriteLine($"Burst found: {burst.ReportCount} reports between {burst.StartTime} and {burst.EndTime}");
+            }
+            else
+            {
+                Console.WriteLine("No burst activity found for this target.");
+            }
         }
     }
 }
