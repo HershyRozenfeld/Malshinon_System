@@ -25,7 +25,7 @@ namespace Malshinon
             _csvImporter = new CsvImporter(_personDal, _intelReportsDal);
 
             // Use Menu class for main menu
-            Menu.ShowMenu(_csvImporter, _intelReportsDal, _alertsDal);
+            Menu.ShowMenu(_csvImporter, _personDal, _intelReportsDal, _alertsDal);
         }
 
     }

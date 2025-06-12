@@ -61,6 +61,9 @@ namespace Malshinon
             _intelReportsDal.UpdateReportCount(reporter.id);
             _intelReportsDal.UpdateMentionCount(target.id);
             Console.WriteLine("Reporter and target stats have been updated.");
+
+            // Threshold analysis and alerts (from Program class)
+            AnalyzeAndAlert(reporter, target); // צריך להעביר את האובייקטים המעודכנים מה-DB
         }
 
         /// Analyzes the reporter and target after a report is submitted, checking for promotion or danger alerts.
@@ -80,12 +83,13 @@ namespace Malshinon
             // Continue only if the person is currently a REPORTER (otherwise, nothing to promote)
             if (reporter.type != PersonType.Reporter) return;
 
-            // Fetch up-to-date data from the DB
-            Person dbReporter = _personDal.GetPersonByName(reporter.firstName, reporter.lastName);
-            if (dbReporter == null) return;
+            // Fetch up-to-date data from the DB to ensure we have current counts and types
+            // (reporter object passed might not be fully up-to-date after initial creation in HandleNewReport)
+            Person dbReporter = _personDal.GetPersonById(reporter.id); // השתמש ב-GetPersonById
+            if (dbReporter == null) return; // אם איכשהו לא מצאנו את האדם, צא
 
             ReporterStats stats = _intelReportsDal.GetStatsForSingleReporter(dbReporter.id);
-            if (stats == null) return;
+            if (stats == null) return; // אם אין סטטיסטיקות, צא
 
             bool enoughReports = stats.TotalReports >= 10;
             bool longText = stats.AverageReportLength >= 100;
@@ -99,7 +103,7 @@ namespace Malshinon
                 Console.ResetColor();
 
                 string reason =
-                    $"קודם לסוכן פוטנציאלי בעקבות {stats.TotalReports} דוחות עם אורך ממוצע {stats.AverageReportLength:F0} תווים.";
+                    $"Promoted to Potential Agent due to {stats.TotalReports} reports with average length {stats.AverageReportLength:F0} characters.";
                 _alertsDal.CreateAlert(dbReporter.id, reason, DateTime.Now, DateTime.Now);
             }
         }
@@ -109,13 +113,13 @@ namespace Malshinon
         /// <param name="target">The target person to check.</param>
         private static void CheckAndFlagTarget(Person target)
         {
-            var updatedTarget = _personDal.GetPersonByName(target.firstName, target.lastName);
+            // Fetch up-to-date data from the DB
+            Person updatedTarget = _personDal.GetPersonById(target.id); // השתמש ב-GetPersonById
             if (updatedTarget == null) return;
 
-            var targetStatsList = _intelReportsDal.GetTargetStats();
-            var targetStats = targetStatsList?.FirstOrDefault(ts =>
-                ts.FirstName == updatedTarget.firstName && ts.LastName == updatedTarget.lastName);
-            int mentionCount = targetStats?.MentionCount ?? 0;
+            // עדכון: שלוף את ה-mentionCount ישירות מאובייקט ה-Person המעודכן,
+            // במקום ללכת ל-GetTargetStats ששולף את כל היעדים.
+            int mentionCount = updatedTarget.numMentions; // נתון זה מעודכן לאחר _intelReportsDal.UpdateMentionCount
 
             if (mentionCount >= 20)
             {
@@ -123,8 +127,12 @@ namespace Malshinon
                 Console.WriteLine($"*** DANGEROUS TARGET ALERT: {updatedTarget.firstName} {updatedTarget.lastName} has reached {mentionCount} mentions! ***");
                 Console.ResetColor();
                 string reason = $"Flagged as dangerous due to reaching {mentionCount} total mentions.";
+
+                // בדיקה אם ההתראה האחרונה כבר נוצרה עבור סיבה זו
+                // שינוי: הוספת בדיקה גם ל-targetId כדי למנוע התראות כפולות לאותו יעד
                 var lastAlert = _alertsDal.GetLastAlerts();
-                if (lastAlert == null || lastAlert.Reason == null || !lastAlert.Reason.Contains("total mentions"))
+                if (lastAlert == null || lastAlert.Reason == null ||
+                    !lastAlert.Reason.Contains("total mentions") || lastAlert.TargetId != updatedTarget.id)
                 {
                     _alertsDal.CreateAlert(updatedTarget.id, reason, DateTime.Now, DateTime.Now);
                 }
@@ -136,10 +144,12 @@ namespace Malshinon
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine($"*** BURST ACTIVITY ALERT: {updatedTarget.firstName} {updatedTarget.lastName} has {burstResult.ReportCount} reports within 15 minutes! ***");
                 Console.ResetColor();
-                string reason = $"Burst activity detected: {burstResult.ReportCount} reports between {burstResult.StartTime} and {burstResult.EndTime}.";
+                string reason = $"Burst activity detected: {burstResult.ReportCount} reports between {burstResult.StartTime:yyyy-MM-dd HH:mm:ss} and {burstResult.EndTime:yyyy-MM-dd HH:mm:ss}."; // פורמט תאריך מלא
 
+                // בדיקה אם ההתראה האחרונה כבר נוצרה עבור סיבה זו
                 var lastAlert = _alertsDal.GetLastAlerts();
-                if (lastAlert == null || lastAlert.Reason == null || !lastAlert.Reason.Contains("Burst activity"))
+                if (lastAlert == null || lastAlert.Reason == null ||
+                    !lastAlert.Reason.Contains("Burst activity") || lastAlert.TargetId != updatedTarget.id)
                 {
                     _alertsDal.CreateAlert(updatedTarget.id, reason, burstResult.StartTime, burstResult.EndTime);
                 }
@@ -155,24 +165,63 @@ namespace Malshinon
             string[] nameParts = fullName.Split(new[] { ' ' }, 2);
             if (nameParts.Length < 2)
             {
-                nameParts = new[] { fullName, "Unknown" };
+                // אם הוזן רק שם אחד, נשתמש בו כשם פרטי והשם משפחה יהיה "Unknown"
+                nameParts = new[] { fullName.Trim(), "Unknown" };
             }
 
-            string firstName = nameParts[0];
-            string lastName = nameParts[1];
+            string firstName = nameParts[0].Trim();
+            string lastName = nameParts[1].Trim();
 
             Person person = _personDal.GetPersonByName(firstName, lastName);
 
             if (person == null)
             {
-                Console.WriteLine("Person not found. Creating a new record.");
+                Console.WriteLine($"Person '{firstName} {lastName}' not found. Creating a new record.");
                 string secretCode = Guid.NewGuid().ToString("N").Substring(0, 8);
 
-                person = new Person(firstName, lastName);
+                // יצירת אובייקט Person חדש עם כל הפרטים הנדרשים
+                Person newPerson = new Person(0, firstName, lastName, secretCode, defaultType, 0, 0);
 
+                // הכנסת האובייקט למסד הנתונים
+                _personDal.InsertNewPerson(newPerson);
+
+                // לאחר ההכנסה, שולפים אותו שוב כדי לקבל את ה-ID שנוצר אוטומטית על ידי DB
+                // ולוודא שהאובייקט הוחזר במלואו מה-DB
                 person = _personDal.GetPersonByName(firstName, lastName);
+                if (person == null)
+                {
+                    Console.WriteLine("Error: Failed to retrieve newly created person from the database.");
+                }
             }
+            else
+            {
+                // אם האדם קיים, וודא שסוגו מכיל את ה-defaultType, אם לא - עדכן אותו.
+                // לדוגמה: אם יעד מדווח על עצמו, הוא יכול להיות גם מדווח וגם יעד.
+                // או אם מדווח קיים מוזכר כיעד.
+                PersonType combinedType = person.type;
+                if (defaultType == PersonType.Reporter && (person.type == PersonType.Target || person.type == PersonType.Both))
+                {
+                    combinedType = PersonType.Both;
+                }
+                else if (defaultType == PersonType.Target && (person.type == PersonType.Reporter || person.type == PersonType.Both))
+                {
+                    combinedType = PersonType.Both;
+                }
+                else if (defaultType == PersonType.PotentialAgent && person.type == PersonType.Reporter)
+                {
+                    combinedType = PersonType.PotentialAgent; // קידום
+                }
+                else
+                {
+                    combinedType = defaultType; // אם הוא לא מסוג "both" או "PotentialAgent" וצריך להיות כזה
+                }
 
+                if (person.type != combinedType)
+                {
+                    _personDal.UpdatePersonType(person.id, combinedType);
+                    person.type = combinedType; // עדכן את האובייקט בזיכרון
+                }
+            }
             return person;
         }
 
@@ -181,15 +230,19 @@ namespace Malshinon
         /// <returns>The <see cref="Person"/> object representing the target, or null if not found.</returns>
         private static Person ExtractAndVerifyTarget(string reportText)
         {
-            var regex = new Regex(@"\b[A-Z][a-z]+ [A-Z][a-z]+\b");
+            // Regex לשמות פרטיים באנגלית, עם תמיכה בשמות מרובי מילים (אופציונלי, למשל "Van Dyke")
+            // פשוט יותר: מזהה שתי מילים שמתחילות באות גדולה
+            var regex = new Regex(@"\b[A-Z][a-z]+(?: [A-Z][a-z]+)+\b");
             Match match = regex.Match(reportText);
 
             if (match.Success)
             {
                 string targetName = match.Value;
+                // GetOrCreatePerson כבר מטפל אם השם הוא "FirstName LastName"
                 return GetOrCreatePerson(targetName, PersonType.Target);
             }
 
+            Console.WriteLine("No valid target name (e.g., 'FirstName LastName') found in the report text.");
             return null;
         }
 
@@ -200,28 +253,36 @@ namespace Malshinon
         {
             List<DateTime> timestamps = _intelReportsDal.GetTimestampsForTarget(targetId);
 
+            // וודא שהרשימה ממוינת לפי זמן, GetTimestampsForTarget כבר עושה זאת.
+            // timestamps.Sort(); // לוודא שהם ממוינים עולה
+
             if (timestamps.Count < 3)
             {
                 return new BurstResult { IsBurstFound = false };
             }
 
             int n = timestamps.Count;
-            BurstResult bestBurst = new BurstResult { IsBurstFound = false };
+            BurstResult bestBurst = new BurstResult { IsBurstFound = false, ReportCount = 0 };
 
+            // לולאה על כל חלון אפשרי
             for (int i = 0; i <= n - 3; i++)
             {
+                // החלון חייב לכלול לפחות 3 דוחות, לכן j מתחיל מ-i+2
                 for (int j = i + 2; j < n; j++)
                 {
                     DateTime windowStart = timestamps[i];
                     DateTime windowEnd = timestamps[j];
-                    int reportCount = j - i + 1;
+                    int currentReportCount = j - i + 1; // מספר הדוחות בחלון הנוכחי
 
                     if ((windowEnd - windowStart).TotalMinutes <= 15)
                     {
-                        if (!bestBurst.IsBurstFound || reportCount > bestBurst.ReportCount)
+                        // אם נמצאה פעילות מתפרצת טובה יותר (יותר דוחות בחלון או חלון קצר יותר לאותו מספר דוחות)
+                        if (!bestBurst.IsBurstFound ||
+                            currentReportCount > bestBurst.ReportCount ||
+                            (currentReportCount == bestBurst.ReportCount && (windowEnd - windowStart) < (bestBurst.EndTime - bestBurst.StartTime)))
                         {
                             bestBurst.IsBurstFound = true;
-                            bestBurst.ReportCount = reportCount;
+                            bestBurst.ReportCount = currentReportCount;
                             bestBurst.StartTime = windowStart;
                             bestBurst.EndTime = windowEnd;
                         }

@@ -77,5 +77,41 @@ namespace Malshinon
             }
             return null;
         }
-    }       
+
+        /// Retrieves all alerts from the database.
+        /// <returns>A list of all Alerts objects.</returns>
+        public List<Alerts> GetAllAlerts()
+        {
+            var alerts = new List<Alerts>();
+            // שימו לב: השאילתה הזו לא מבצעת JOIN לשמות. אם תרצו שמות, תצטרכו לשנות את השאילתה.
+            string query = "SELECT id, target_id, reason, start_time, end_time, created_at FROM Alerts ORDER BY created_at DESC;";
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    using (var cmd = new MySqlCommand(query, conn))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            alerts.Add(new Alerts(
+                                reader.GetInt32("id"),
+                                reader.GetInt32("target_id"),
+                                reader.GetString("reason"),
+                                reader.GetDateTime("start_time"),
+                                reader.GetDateTime("end_time"),
+                                reader.GetDateTime("created_at")
+                            ));
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine($"Database error in GetAllAlerts: {e.Message}");
+                }
+            }
+            return alerts;
+        }
+    }
 }
