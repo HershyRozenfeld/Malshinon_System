@@ -103,7 +103,25 @@ namespace Malshinon
             return person;
         }
 
-        
+        public List<Person> GetAllPersons()
+        {
+            List<Person> persons = new List<Person>();
+            string query = "SELECT * FROM Person;";
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                conn.Open();
+                using (var cmd = new MySqlCommand(query, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        persons.Add(MapReaderToPeople(reader));
+                    }
+                }
+            }
+            return persons;
+        }
+
         /// Inserts a new person into the database.
         /// <param name="person">The Person object to insert.</param>
         public void InsertNewPerson(Person person)
