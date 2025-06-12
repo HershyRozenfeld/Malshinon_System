@@ -6,55 +6,114 @@ using System.Threading.Tasks;
 
 namespace Malshinon
 {
-    internal class Menu
+    /// <summary>
+    /// Provides the main menu interface for the Malshinon system.
+    /// Handles user interaction and delegates actions to the appropriate handlers and data access layers.
+    /// </summary>
+    internal static class Menu
     {
-        public void ShowMainMenu(List<string> agents, List<string> targets)
+        /// Displays the main menu and processes user input in a loop until exit is selected.
+        /// <param name="csvImporter">The CSV importer for importing reports from files.</param>
+        /// <param name="intelReportsDal">The data access layer for intelligence reports and statistics.</param>
+        /// <param name="alertsDal">The data access layer for alerts.</param>
+        public static void ShowMenu(
+            CsvImporter csvImporter,
+            IntelReportsDAL intelReportsDal,
+            AlertsDAL alertsDal)
         {
             while (true)
             {
-                Console.Clear();
-                Console.WriteLine("=== Main Menu ===");
-                Console.WriteLine("1. Print aware agents");
-                Console.WriteLine("2. Print dangerous targets");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("\n=== Malshinon System – Main Menu ===");
+                Console.ResetColor();
+                Console.WriteLine("1. Submit manual report");
+                Console.WriteLine("2. Import CSV");
+                Console.WriteLine("3. Show potential agents");
+                Console.WriteLine("4. Show dangerous targets");
+                Console.WriteLine("5. Show latest alerts");
                 Console.WriteLine("0. Exit");
-                Console.Write("Select an option: ");
-                var input = Console.ReadLine();
+                Console.Write("Choice: ");
+                string choice = Console.ReadLine();
 
-                switch (input)
+                switch (choice)
                 {
                     case "1":
-                        PrintList("Aware Agents", agents);
+                        ReportHandler.HandleNewReport();
                         break;
+
                     case "2":
-                        PrintList("Dangerous Targets", targets);
+                        Console.Write("Enter path to CSV file: ");
+                        string path = Console.ReadLine();
+                        csvImporter.Import(path);
+                        break;
+
+                    case "3":
+                        PrintPotentialAgents(intelReportsDal);
+                        break;
+
+                    case "4":
+                        PrintDangerousTargets(intelReportsDal);
+                        break;
+
+                    case "5":
+                        PrintLastAlert(alertsDal);
                         break;
                     case "0":
                         return;
+
                     default:
-                        Console.WriteLine("Invalid option. Press any key to continue...");
-                        Console.ReadKey();
+                        Console.WriteLine("Invalid choice, please try again.");
                         break;
                 }
             }
         }
 
-        private void PrintList(string title, List<string> items)
+        /// Prints a list of potential agents based on reporter statistics.
+        /// Only reporters with at least 10 reports and an average report length of at least 100 characters are shown.
+        /// <param name="intelReportsDal">The data access layer for intelligence reports and statistics.</param>
+        private static void PrintPotentialAgents(IntelReportsDAL intelReportsDal)
         {
-            Console.Clear();
-            Console.WriteLine($"=== {title} ===");
-            if (items == null || items.Count == 0)
+            List<ReporterStats> list = intelReportsDal.GetReporterStats();
+            Console.WriteLine("\n--- Potential Agents ---");
+            for (int i = 0; i < list.Count; i++)
             {
-                Console.WriteLine("No items to display.");
-            }
-            else
-            {
-                foreach (var item in items)
+                ReporterStats s = list[i];
+                if (s.TotalReports >= 10 && s.AverageReportLength >= 100)
                 {
-                    Console.WriteLine("- " + item);
+                    Console.WriteLine($"{i + 1}. {s.FirstName} {s.LastName} – {s.TotalReports} reports, average length {s.AverageReportLength:F0} characters");
                 }
             }
-            Console.WriteLine("\nPress any key to return to the menu...");
-            Console.ReadKey();
+        }
+
+        /// Prints a list of dangerous targets based on target statistics.
+        /// Only targets with at least 20 mentions are shown.
+        /// <param name="intelReportsDal">The data access layer for intelligence reports and statistics.</param>
+        private static void PrintDangerousTargets(IntelReportsDAL intelReportsDal)
+        {
+            List<TargetStats> list = intelReportsDal.GetTargetStats();
+            Console.WriteLine("\n--- Dangerous Targets ---");
+            for (int i = 0; i < list.Count; i++)
+            {
+                TargetStats t = list[i];
+                if (t.MentionCount >= 20)
+                {
+                    Console.WriteLine($"{i + 1}. {t.FirstName} {t.LastName} – {t.MentionCount} mentions");
+                }
+            }
+        }
+
+        /// Prints the most recent alert from the alerts data access layer.
+        /// If no alerts are recorded, a message is displayed.
+        /// <param name="alertsDal">The data access layer for alerts.</param>
+        private static void PrintLastAlert(AlertsDAL alertsDal)
+        {
+            Alerts a = alertsDal.GetLastAlerts();
+            if (a == null)
+            {
+                Console.WriteLine("\nNo alerts recorded.");
+                return;
+            }
+            Console.WriteLine($"\n--- Latest Alert ---\nTarget: {a.TargetId}\nReason: {a.Reason}\nTime: {a.CreatedAt}");
         }
     }
 }
