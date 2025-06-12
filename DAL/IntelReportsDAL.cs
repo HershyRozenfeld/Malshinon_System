@@ -131,7 +131,32 @@ namespace Malshinon
             return statsList;
         }
 
-        
+        public List<IntelReports> GetAllIntelReports()
+        {
+            var reports = new List<IntelReports>();
+            string query = "SELECT id, reporter_id, target_id, text, timestamp FROM IntelReports ORDER BY timestamp DESC;";
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                conn.Open();
+                using (var cmd = new MySqlCommand(query, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        // יש לוודא שקונסטרוקטור זה קיים במחלקת IntelReports
+                        reports.Add(new IntelReports(
+                            reader.GetInt32("id"),
+                            reader.GetInt32("reporter_id"),
+                            reader.GetInt32("target_id"),
+                            reader.GetString("text"),
+                            reader.GetDateTime("timestamp")
+                        ));
+                    }
+                }
+            }
+            return reports;
+        }
+
         /// Gets ReporterStats for a specific reporter by ID.
         /// <param name="reporterId">The ID of the reporter.</param>
         /// <returns>The ReporterStats object for the specified reporter, or null if not found.</returns>
