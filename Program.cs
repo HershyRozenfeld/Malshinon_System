@@ -7,116 +7,31 @@ namespace Malshinon
 {
     internal class Program
     {
-        // Assumption: DAL Instances are accessible to the entire class
+        // DAL instances are accessible to the entire class
         private static readonly PersonDAL _personDal = new PersonDAL();
         private static readonly IntelReportsDAL _intelReportsDal = new IntelReportsDAL();
         private static readonly AlertsDAL _alertsDal = new AlertsDAL();
-        private static CsvImporter _csv;
-
-        static void Main(string[] args)
-        {
-            // Create CSV importer object
-            _csv = new CsvImporter(_personDal, _intelReportsDal);
-
-            ShowMenu();
-        }
+        private static CsvImporter _csvImporter;
 
         /// <summary>
-        /// Main interactive menu
+        /// Main entry point. Initializes handlers and shows the main menu.
         /// </summary>
-        private static void ShowMenu()
+        static void Main(string[] args)
         {
-            while (true)
-            {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("\n=== Malshinon System – Main Menu ===");
-                Console.ResetColor();
-                Console.WriteLine("1. Submit manual report");
-                Console.WriteLine("2. Import CSV");
-                Console.WriteLine("3. Show potential agents");
-                Console.WriteLine("4. Show dangerous targets");
-                Console.WriteLine("5. Show latest alerts");
-                Console.WriteLine("0. Exit");
-                Console.Write("Choice: ");
-                string choice = Console.ReadLine();
+            // Initialize ReportHandler with DALs
+            ReportHandler.Initialize(_personDal, _intelReportsDal, _alertsDal);
 
-                switch (choice)
-                {
-                    case "1":
-                        HandleNewReport();
-                        break;
+            // Create CSV importer object
+            _csvImporter = new CsvImporter(_personDal, _intelReportsDal);
 
-                    case "2":
-                        Console.Write("Enter path to CSV file: ");
-                        string path = Console.ReadLine();
-                        _csv.Import(path);
-                        break;
-
-                    case "3":
-                        PrintPotentialAgents();
-                        break;
-
-                    case "4":
-                        PrintDangerousTargets();
-                        break;
-
-                    case "5":
-                        PrintLastAlert();
-                        break;
-
-                    case "0":
-                        return;
-
-                    default:
-                        Console.WriteLine("Invalid choice, please try again.");
-                        break;
-                }
-            }
+            // Use Menu class for main menu
+            Menu.ShowMenu(_csvImporter, _intelReportsDal, _alertsDal);
         }
 
-        private static void PrintPotentialAgents()
-        {
-            List<ReporterStats> list = _intelReportsDal.GetReporterStats();
-            Console.WriteLine("\n--- Potential Agents ---");
-            for (int i = 0; i < list.Count; i++)
-            {
-                ReporterStats s = list[i];
-                if (s.TotalReports >= 10 && s.AverageReportLength >= 100)
-                {
-                    Console.WriteLine($"{i + 1}. {s.FirstName} {s.LastName} – {s.TotalReports} reports, average length {s.AverageReportLength:F0} characters");
-                }
-            }
-        }
-
-        private static void PrintDangerousTargets()
-        {
-            List<TargetStats> list = _intelReportsDal.GetTargetStats();
-            Console.WriteLine("\n--- Dangerous Targets ---");
-            for (int i = 0; i < list.Count; i++)
-            {
-                TargetStats t = list[i];
-                if (t.MentionCount >= 20)
-                {
-                    Console.WriteLine($"{i + 1}. {t.FirstName} {t.LastName} – {t.MentionCount} mentions");
-                }
-            }
-        }
-
-        private static void PrintLastAlert()
-        {
-            Alerts a = _alertsDal.GetLastAlerts();
-            if (a == null)
-            {
-                Console.WriteLine("\nNo alerts recorded.");
-                return;
-            }
-            Console.WriteLine($"\n--- Latest Alert ---\nTarget: {a.TargetId}\nReason: {a.Reason}\nTime: {a.CreatedAt}");
-        }
-
-
+        /// Handles the process of submitting a new intel report.
         public static void HandleNewReport()
         {
-            // --- שלב 1: זיהוי המדווח ---
+            // Step 1: Identify the reporter
             Console.WriteLine("\nPlease identify yourself (enter your full name):");
             string reporterName = Console.ReadLine();
             Person reporter = GetOrCreatePerson(reporterName, PersonType.Reporter);
@@ -129,7 +44,7 @@ namespace Malshinon
 
             Console.WriteLine($"Welcome, {reporter.firstName}. Your secret code is: {reporter.secretCode}");
 
-            // --- שלב 2: קבלת הדיווח וזיהוי המטרה ---
+            // Step 2: Receive the report and identify the target
             Console.WriteLine("\nPlease enter your intel report. Make sure to mention the target's full name (e.g., 'Israel Israeli').");
             string reportText = Console.ReadLine();
 
@@ -141,67 +56,67 @@ namespace Malshinon
             }
             Console.WriteLine($"Target identified: {target.firstName} {target.lastName}");
 
-            // --- שלב 3: שמירת הדיווח במסד הנתונים ---
+            // Step 3: Save the report to the database
             IntelReports newReport = new IntelReports(reporter.id, target.id, reportText);
             _intelReportsDal.InsertIntelReport(newReport);
             Console.WriteLine("Intel report successfully submitted.");
 
-            // --- שלב 4: עדכון מדדים ---
+            // Step 4: Update statistics
             _intelReportsDal.UpdateReportCount(reporter.id);
             _intelReportsDal.UpdateMentionCount(target.id);
             Console.WriteLine("Reporter and target stats have been updated.");
-
-            // --- שלב 5 (עתידי): בדיקת ספים והתראות ---
-            // נוסיף כאן את הלוגיקה לבדיקת קידום סוכנים והתראות בהמשך
         }
+
+        /// Analyzes the reporter and target for promotion or alert conditions.
         public static void AnalyzeAndAlert(Person reporter, Person target)
         {
-            // בדיקה 1: האם לקדם את המדווח?
+            // Check if the reporter should be promoted
             CheckAndPromoteReporter(reporter);
 
-            // בדיקה 2: האם המטרה הפכה למסוכנת?
+            // Check if the target should be flagged as dangerous
             CheckAndFlagTarget(target);
         }
+
+        /// Checks if a reporter meets the criteria for promotion to potential agent.
         private static void CheckAndPromoteReporter(Person reporter)
         {
-            // נמשיך רק אם האדם הוא כרגע REPORTER (אחרת אין מה לקדם)
+            // Only proceed if the person is currently a REPORTER
             if (reporter.type != PersonType.Reporter) return;
 
-            // שולפים נתונים עדכניים מה-DB
+            // Fetch up-to-date data from the DB
             Person dbReporter = _personDal.GetPersonByName(reporter.firstName, reporter.lastName);
             if (dbReporter == null) return;
 
             ReporterStats stats = _intelReportsDal.GetStatsForSingleReporter(dbReporter.id);
             if (stats == null) return;
 
-            bool די_דוחות = stats.TotalReports >= 10;
-            bool טקסט_ארוך = stats.AverageReportLength >= 100;
+            bool enoughReports = stats.TotalReports >= 10;
+            bool longText = stats.AverageReportLength >= 100;
 
-            if (די_דוחות && טקסט_ארוך)
+            if (enoughReports && longText)
             {
-                // *** שינוי הסוג ל-potential_agent ***
+                // Change type to PotentialAgent
                 _personDal.UpdatePersonType(dbReporter.id, PersonType.PotentialAgent);
 
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"\n*** קידום! {reporter.firstName} {reporter.lastName} הוגדר כ-סוכן פוטנציאלי ***\n");
+                Console.WriteLine($"\n*** Promotion! {reporter.firstName} {reporter.lastName} has been set as a potential agent ***\n");
                 Console.ResetColor();
 
-                // ניצור Alert כדי לציין זאת ביומן
+                // Create an alert to log this event
                 string reason =
-                    $"קודם לסוכן פוטנציאלי בעקבות {stats.TotalReports} דוחות עם אורך ממוצע {stats.AverageReportLength:F0} תווים.";
+                    $"Promoted to potential agent after {stats.TotalReports} reports with average length {stats.AverageReportLength:F0} characters.";
                 _alertsDal.CreateAlert(dbReporter.id, reason, DateTime.Now, DateTime.Now);
             }
         }
 
-
+        /// Checks if a target meets the criteria for being flagged as dangerous or for burst activity.
         private static void CheckAndFlagTarget(Person target)
         {
-            // שולפים את הגרסה המעודכנת של המטרה מה-DB כדי לקבל את מספר האזכורים הנכון
+            // Fetch the updated version of the target from the DB to get the correct mention count
             var updatedTarget = _personDal.GetPersonByName(target.firstName, target.lastName);
             if (updatedTarget == null) return;
 
-            // בדיקה 1: האם המטרה הגיעה לסף 20 האזכורים?
-            // Person.numMentions is not public, so use TargetStats from DAL
+            // Check 1: Has the target reached the threshold of 20 mentions?
             var targetStatsList = _intelReportsDal.GetTargetStats();
             var targetStats = targetStatsList?.FirstOrDefault(ts =>
                 ts.FirstName == updatedTarget.firstName && ts.LastName == updatedTarget.lastName);
@@ -213,7 +128,7 @@ namespace Malshinon
                 Console.WriteLine($"*** DANGEROUS TARGET ALERT: {updatedTarget.firstName} {updatedTarget.lastName} has reached {mentionCount} mentions! ***");
                 Console.ResetColor();
                 string reason = $"Flagged as dangerous due to reaching {mentionCount} total mentions.";
-                // נרצה למנוע התראות כפולות על אותו אירוע, לכן נבדוק את ההתראה האחרונה
+                // Prevent duplicate alerts for the same event by checking the last alert
                 var lastAlert = _alertsDal.GetLastAlerts();
                 if (lastAlert == null || lastAlert.Reason == null || !lastAlert.Reason.Contains("total mentions"))
                 {
@@ -221,7 +136,7 @@ namespace Malshinon
                 }
             }
 
-            // בדיקה 2: האם היה פרץ דיווחים?
+            // Check 2: Was there a burst of reports?
             var burstResult = new Program().FindBurstActivityForTarget(updatedTarget.id);
             if (burstResult.IsBurstFound)
             {
@@ -237,12 +152,14 @@ namespace Malshinon
                 }
             }
         }
+
+        /// Gets an existing person by full name or creates a new one if not found.
         private static Person GetOrCreatePerson(string fullName, PersonType defaultType)
         {
             string[] nameParts = fullName.Split(new[] { ' ' }, 2);
             if (nameParts.Length < 2)
             {
-                // אם המשתמש לא הכניס שם מלא, נבקש שוב או ניצור שם ברירת מחדל
+                // If the user did not enter a full name, use a default last name
                 nameParts = new[] { fullName, "Unknown" };
             }
 
@@ -251,38 +168,39 @@ namespace Malshinon
 
             Person person = _personDal.GetPersonByName(firstName, lastName);
 
-            if (person == null) // אם המשתמש לא קיים, ניצור אחד חדש
+            if (person == null) // If the person does not exist, create a new one
             {
                 Console.WriteLine("Person not found. Creating a new record.");
-                string secretCode = Guid.NewGuid().ToString("N").Substring(0, 8); // יצירת קוד סודי ייחודי 
+                string secretCode = Guid.NewGuid().ToString("N").Substring(0, 8); // Generate a unique secret code
 
                 person = new Person(0, firstName, lastName, secretCode, defaultType, 0, 0);
                 _personDal.InsertNewPerson(person);
 
-                // חשוב: לאחר ההוספה, צריך לשלוף את המשתמש שוב כדי לקבל את ה-ID שלו
+                // After insertion, fetch the person again to get their ID
                 person = _personDal.GetPersonByName(firstName, lastName);
             }
 
             return person;
         }
 
+        /// Extracts and verifies the target's name from the report text.
         private static Person ExtractAndVerifyTarget(string reportText)
         {
-            // Regex לזיהוי שם בפורמט "שם פרטי שם משפחה" עם אותיות גדולות בתחילת כל מילה
+            // Regex to identify a name in the format "FirstName LastName" with capital letters at the start of each word
             var regex = new Regex(@"\b[A-Z][a-z]+ [A-Z][a-z]+\b");
             Match match = regex.Match(reportText);
 
             if (match.Success)
             {
                 string targetName = match.Value;
-                // לאחר שמצאנו שם, נשתמש בפונקציה הקיימת כדי ליצור אותו אם הוא לא קיים
+                // Use the existing function to create the person if not found
                 return GetOrCreatePerson(targetName, PersonType.Target);
             }
 
             return null;
         }
 
-        // זו הפונקציה המקורית שלך לניתוח פרצי פעילות. נשלב אותה בהמשך.
+        /// Analyzes report timestamps for a target to find burst activity (3+ reports in 15 minutes).
         public BurstResult FindBurstActivityForTarget(int targetId)
         {
             List<DateTime> timestamps = _intelReportsDal.GetTimestampsForTarget(targetId);
@@ -293,8 +211,7 @@ namespace Malshinon
             }
 
             int n = timestamps.Count;
-            // The original logic had a potential issue of returning too early.
-            // This improved version finds the best possible burst.
+            // This logic finds the best possible burst window
             BurstResult bestBurst = new BurstResult { IsBurstFound = false };
 
             for (int i = 0; i <= n - 3; i++)
@@ -307,7 +224,7 @@ namespace Malshinon
 
                     if ((windowEnd - windowStart).TotalMinutes <= 15)
                     {
-                        // We found a burst, check if it's better than a previous one
+                        // Found a burst, check if it's better than a previous one
                         if (!bestBurst.IsBurstFound || reportCount > bestBurst.ReportCount)
                         {
                             bestBurst.IsBurstFound = true;
