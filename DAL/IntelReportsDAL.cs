@@ -33,8 +33,8 @@ namespace Malshinon
                 }
             }
         }
-
         
+
         /// Inserts a new IntelReports record with a specified timestamp.
         /// <param name="intelReport">The IntelReports object containing the report data to insert.</param>
         /// <param name="ts">The timestamp to use for the report.</param>
