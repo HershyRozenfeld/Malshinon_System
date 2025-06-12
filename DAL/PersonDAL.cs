@@ -48,7 +48,7 @@ namespace Malshinon
                 try
                 {
                     conn.Open();
-                    var query = "SELECT * FROM Person WHERE first_name = @first_name AND last_name = @last_name";
+                    var query = "SELECT * FROM Person WHERE first_name = @first_name AND last_name = @last_name;";
                     using (var cmd = new MySqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@first_name", first_name);
