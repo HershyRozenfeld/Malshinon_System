@@ -1,9 +1,19 @@
-﻿using System;
+﻿// --- START OF FILE IntelReportsDAL.cs ---
+
+using System;
 using System.Collections.Generic;
 using MySql.Data.MySqlClient;
 
 namespace Malshinon
 {
+    // נניח שזו הגדרת המחלקה IntelReports
+    // וודא שהקונסטרוקטורים הבאים קיימים במודל IntelReports:
+    // public IntelReports(int reporterId, int targetId, string text) { ... }
+    // public IntelReports(int reporterId, int targetId, string text, DateTime timestamp) { ... }
+    // *** זה חדש/מחייב בדיקה ***
+    // public IntelReports(int id, int reporterId, int targetId, string text, DateTime timestamp) { ... }
+    // אם קונסטרוקטור זה חסר, יש להוסיף אותו למחלקת IntelReports
+
     /// <summary>
     /// Data access layer for IntelReports and related Person statistics.
     /// Contains methods for inserting reports, updating counters, and retrieving statistics.
@@ -12,7 +22,7 @@ namespace Malshinon
     {
         private readonly string _connStr = "server=localhost;user=root;password=;database=Malshinon";
 
-        
+
         /// Inserts a new IntelReports record.
         /// <param name="intelReport">The IntelReports object containing the report data to insert.</param>
         public void InsertIntelReport(IntelReports intelReport)
@@ -33,7 +43,7 @@ namespace Malshinon
                 }
             }
         }
-        
+
 
         /// Inserts a new IntelReports record with a specified timestamp.
         /// <param name="intelReport">The IntelReports object containing the report data to insert.</param>
@@ -58,7 +68,7 @@ namespace Malshinon
             }
         }
 
-        
+
         /// Updates the num_reports field for a person by incrementing it.
         /// <param name="personId">The ID of the person whose report count will be incremented.</param>
         public void UpdateReportCount(int personId)
@@ -76,7 +86,7 @@ namespace Malshinon
             }
         }
 
-        
+
         /// Updates the num_mentions field for a person by incrementing it.
         /// <param name="personId">The ID of the person whose mention count will be incremented.</param>
         public void UpdateMentionCount(int personId)
@@ -94,7 +104,7 @@ namespace Malshinon
             }
         }
 
-        
+
         /// Gets a list of ReporterStats for all reporters.
         /// <returns>A list of ReporterStats objects containing statistics for all reporters.</returns>
         public List<ReporterStats> GetReporterStats()
@@ -131,31 +141,6 @@ namespace Malshinon
             return statsList;
         }
 
-        public List<IntelReports> GetAllIntelReports()
-        {
-            var reports = new List<IntelReports>();
-            string query = "SELECT id, reporter_id, target_id, text, timestamp FROM IntelReports ORDER BY timestamp DESC;";
-            using (var conn = new MySqlConnection(_connStr))
-            {
-                conn.Open();
-                using (var cmd = new MySqlCommand(query, conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        // יש לוודא שקונסטרוקטור זה קיים במחלקת IntelReports
-                        reports.Add(new IntelReports(
-                            reader.GetInt32("id"),
-                            reader.GetInt32("reporter_id"),
-                            reader.GetInt32("target_id"),
-                            reader.GetString("text"),
-                            reader.GetDateTime("timestamp")
-                        ));
-                    }
-                }
-            }
-            return reports;
-        }
 
         /// Gets ReporterStats for a specific reporter by ID.
         /// <param name="reporterId">The ID of the reporter.</param>
@@ -196,7 +181,7 @@ namespace Malshinon
             return stats;
         }
 
-        
+
         /// Gets a list of TargetStats for all targets with mentions.
         /// <returns>A list of TargetStats objects containing statistics for all targets with mentions.</returns>
         public List<TargetStats> GetTargetStats()
@@ -229,7 +214,43 @@ namespace Malshinon
             return list;
         }
 
-        
+        /// Gets a list of all IntelReports.
+        /// <returns>A list of IntelReports objects.</returns>
+        public List<IntelReports> GetAllIntelReports()
+        {
+            var reports = new List<IntelReports>();
+            // שימו לב: השאילתה הזו לא מבצעת JOIN לשמות. אם תרצו שמות, תצטרכו לשנות את השאילתה.
+            string query = "SELECT id, reporter_id, target_id, text, timestamp FROM IntelReports ORDER BY timestamp DESC;";
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    using (var cmd = new MySqlCommand(query, conn))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            // וודא שקיים קונסטרוקטור זה במחלקת IntelReports
+                            reports.Add(new IntelReports(
+                                reader.GetInt32("id"),
+                                reader.GetInt32("reporter_id"),
+                                reader.GetInt32("target_id"),
+                                reader.GetString("text"),
+                                reader.GetDateTime("timestamp")
+                            ));
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine($"Database error in GetAllIntelReports: {e.Message}");
+                }
+            }
+            return reports;
+        }
+
+
         /// Gets a list of timestamps for a given target's reports.
         /// <param name="targetId">The ID of the target person.</param>
         /// <returns>A list of DateTime objects representing the timestamps of reports about the target.</returns>
@@ -246,7 +267,7 @@ namespace Malshinon
             using (var conn = new MySqlConnection(_connStr))
             {
                 conn.Open();
-                using (var cmd = new MySqlCommand(query, conn))     
+                using (var cmd = new MySqlCommand(query, conn))
                 {
                     cmd.Parameters.AddWithValue("@targetId", targetId);
                     using (var reader = cmd.ExecuteReader())

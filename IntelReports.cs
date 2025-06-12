@@ -12,7 +12,7 @@ namespace Malshinon
         public int reporterId { get; set; }
         public int targetId { get; set; }
         public string text { get; set; }
-        DateTime time { get; set; }
+        public DateTime time { get; set; }
         public IntelReports(int id, int reporterId, int targetId, string text, DateTime time)
         {
             this.id = id;

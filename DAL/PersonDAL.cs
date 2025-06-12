@@ -16,7 +16,7 @@ namespace Malshinon
     {
         private readonly string _connStr = "server=localhost;user=root;password=;database=Malshinon";
 
-        
+
         /// Maps a MySqlDataReader row to a Person object.
         /// <param name="reader">The data reader containing person data.</param>
         /// <returns>A Person object populated from the reader.</returns>
@@ -35,7 +35,38 @@ namespace Malshinon
             );
         }
 
-        
+        /// Retrieves a person by their ID.
+        /// <param name="id">The ID of the person.</param>
+        /// <returns>The Person object if found; otherwise, null.</returns>
+        public Person GetPersonById(int id)
+        {
+            Person person = null;
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    var query = "SELECT * FROM Person WHERE id = @id;";
+                    using (var cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                person = MapReaderToPeople(reader);
+                            }
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error fetching person by ID: " + e.Message);
+                }
+            }
+            return person;
+        }
+
         /// Retrieves a person by their first and last name.
         /// <param name="first_name">The first name of the person.</param>
         /// <param name="last_name">The last name of the person.</param>
@@ -70,7 +101,7 @@ namespace Malshinon
             return person;
         }
 
-        
+
         /// Retrieves a person by their secret code.
         /// <param name="secret_code">The secret code of the person.</param>
         /// <returns>The Person object if found; otherwise, null.</returns>
@@ -103,25 +134,6 @@ namespace Malshinon
             return person;
         }
 
-        public List<Person> GetAllPersons()
-        {
-            List<Person> persons = new List<Person>();
-            string query = "SELECT * FROM Person;";
-            using (var conn = new MySqlConnection(_connStr))
-            {
-                conn.Open();
-                using (var cmd = new MySqlCommand(query, conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        persons.Add(MapReaderToPeople(reader));
-                    }
-                }
-            }
-            return persons;
-        }
-
         /// Inserts a new person into the database.
         /// <param name="person">The Person object to insert.</param>
         public void InsertNewPerson(Person person)
@@ -138,7 +150,7 @@ namespace Malshinon
                         cmd.Parameters.AddWithValue("@first_name", person.firstName);
                         cmd.Parameters.AddWithValue("@last_name", person.lastName);
                         cmd.Parameters.AddWithValue("@secret_code", person.secretCode);
-                        cmd.Parameters.AddWithValue("@type", person.type);
+                        cmd.Parameters.AddWithValue("@type", person.type.ToString()); // Convert enum to string
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -149,7 +161,35 @@ namespace Malshinon
             }
         }
 
-        
+        /// Retrieves all persons from the database.
+        /// <returns>A list of all Person objects.</returns>
+        public List<Person> GetAllPersons()
+        {
+            List<Person> persons = new List<Person>();
+            using (var conn = new MySqlConnection(_connStr))
+            {
+                try
+                {
+                    conn.Open();
+                    var query = "SELECT * FROM Person ORDER BY first_name, last_name;";
+                    using (var cmd = new MySqlCommand(query, conn))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            persons.Add(MapReaderToPeople(reader));
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error fetching all persons: " + e.Message);
+                }
+            }
+            return persons;
+        }
+
+
         /// Checks if a person exists in the database by their first and last name.
         /// <param name="first_name">The first name of the person.</param>
         /// <param name="last_name">The last name of the person.</param>
@@ -180,7 +220,7 @@ namespace Malshinon
             }
         }
 
-        
+
         /// Checks if a person exists in the database by their secret code.
         /// <param name="secret_code">The secret code of the person.</param>
         /// <returns>True if the person exists; otherwise, false.</returns>
@@ -209,7 +249,7 @@ namespace Malshinon
             }
         }
 
-        
+
         /// Updates the type of a person in the database.
         /// <param name="personId">The ID of the person to update.</param>
         /// <param name="newType">The new PersonType to set.</param>

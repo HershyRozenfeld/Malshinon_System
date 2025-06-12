@@ -29,9 +29,9 @@ namespace Malshinon
         /// Gets or sets the type of the person.
         public PersonType type { get; set; } = PersonType.Reporter;
         /// The number of reports associated with the person.
-        int numReports { get; set; }
+        public int numReports { get; set; }
         /// The number of mentions associated with the person.
-        int numMentions { get; set; }
+        public int numMentions { get; set; }
         public Person(int id, string firstName, string lastName, string secretCode, PersonType type, int numReports, int numMentions)
         {
             this.id = id;
