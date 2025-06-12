@@ -107,6 +107,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReporterStats.cs" />
+    <Compile Include="ReportHandler.cs" />
     <Compile Include="TargetStats.cs" />
   </ItemGroup>
   <ItemGroup>
