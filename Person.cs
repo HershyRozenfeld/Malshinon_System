@@ -21,7 +21,7 @@ namespace Malshinon
     /// Represents a person with identifying information and classification.
     internal class Person
     {
-        int id { get; set; }
+        public int id { get; set; }
         public string firstName { get; set; }
         public string lastName { get; set; }
         /// Gets or sets the secret code for the person.
