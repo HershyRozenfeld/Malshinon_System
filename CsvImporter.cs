@@ -80,7 +80,7 @@ namespace Malshinon
                 _intelDal.UpdateMentionCount(target.id);
 
                 // Threshold analysis and alerts (from Program class)
-                Program.AnalyzeAndAlert(reporter, target);
+                ReportHandler.AnalyzeAndAlert(reporter, target);
             }
 
             Console.WriteLine("\n✅ Import completed successfully.");
